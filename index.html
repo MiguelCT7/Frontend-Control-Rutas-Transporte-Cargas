@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LogiTrans Express</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+    <!-- Pantalla de Login -->
+    <div id="pantalla-login">
+        <div class="login-container">
+            <div class="login-logo">
+                <div class="login-icono">🚛</div>
+                <h1 class="login-titulo">LogiTrans Express</h1>
+                <p class="login-subtitulo">Sistema de Control de Transporte</p>
+            </div>
+            <form id="form-login" class="login-form">
+                <div class="form-grupo">
+                    <label>Usuario o correo</label>
+                    <input type="text" id="login-usuario" class="form-input" placeholder="Ingresa tu usuario">
+                </div>
+                <div class="form-grupo">
+                    <label>Contraseña</label>
+                    <input type="password" id="login-contrasena" class="form-input" placeholder="Ingresa tu contraseña">
+                </div>
+                <button type="button" class="btn-login" onclick="Auth.login()">Ingresar</button>
+                <p id="login-error" class="login-error"></p>
+            </form>
+        </div>
+    </div>
+
+    <!-- Pantalla Principal -->
+    <div id="pantalla-principal" style="display:none">
+
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <div class="sidebar-icono">🚛</div>
+                <div>
+                    <div class="sidebar-titulo">LogiTrans Express</div>
+                    <div class="sidebar-subtitulo">Control de Transporte</div>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="nav-seccion">Principal</div>
+                <div class="nav-item active" onclick="Navegacion.ir('dashboard')">
+                    <span class="nav-icon">📊</span> Dashboard
+                </div>
+
+                <div class="nav-seccion">Gestión</div>
+                <div class="nav-item" onclick="Navegacion.ir('conductores')">
+                    <span class="nav-icon">👨‍✈️</span> Conductores
+                </div>
+                <div class="nav-item" onclick="Navegacion.ir('vehiculos')">
+                    <span class="nav-icon">🚛</span> Vehículos
+                </div>
+                <div class="nav-item" onclick="Navegacion.ir('rutas')">
+                    <span class="nav-icon">🗺️</span> Rutas
+                </div>
+                <div class="nav-item" onclick="Navegacion.ir('programacion')">
+                    <span class="nav-icon">📅</span> Programación
+                </div>
+
+                <div class="nav-seccion">Operativo</div>
+                <div class="nav-item" onclick="Navegacion.ir('viajes')">
+                    <span class="nav-icon">📍</span> Seguimiento
+                </div>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="nav-item" onclick="Auth.logout()">
+                    <span class="nav-icon">🚪</span> Cerrar sesión
+                </div>
+            </div>
+        </aside>
+
+        <!-- Contenido principal -->
+        <div class="main-wrapper">
+            <header class="topbar">
+                <div id="topbar-titulo" class="topbar-titulo">Dashboard</div>
+                <div class="topbar-usuario">
+                    <div class="usuario-avatar" id="usuario-avatar">AD</div>
+                    <span id="usuario-nombre">Administrador</span>
+                </div>
+            </header>
+
+            <main id="contenido-principal" class="contenido">
+            </main>
+        </div>
+    </div>
+
+    <!-- Toast notifications -->
+    <div id="toast-contenedor"></div>
+
+    <!-- Scripts -->
+    <script src="js/config.js"></script>
+    <script src="js/services/SessionService.js"></script>
+    <script src="js/services/ApiService.js"></script>
+    <script src="js/services/NotificacionService.js"></script>
+    <script src="js/modules/dashboard.js"></script>
+    <script src="js/modules/conductores.js"></script>
+    <script src="js/modules/vehiculos.js"></script>
+    <script src="js/modules/rutas.js"></script>
+    <script src="js/modules/viajes.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
