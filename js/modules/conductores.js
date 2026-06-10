@@ -14,15 +14,25 @@ const ModuloConductores = (() => {
                     <h2 class="modulo-titulo">Conductores</h2>
                     <p class="modulo-subtitulo">Gestión de la flota de conductores</p>
                 </div>
-                <button class="btn btn--primario" onclick="ModuloConductores.abrirFormulario()">
-                    + Nuevo Conductor
-                </button>
+                <div style="display:flex;gap:10px">
+                    <button class="btn btn--advertencia"
+                        onclick="ModuloConductores.verAlertas()">
+                        ⚠️ Licencias por Vencer
+                    </button>
+                    <button class="btn btn--primario"
+                        onclick="ModuloConductores.abrirFormulario()">
+                        + Nuevo Conductor
+                    </button>
+                </div>
             </div>
+
+            <div id="panel-alertas" style="display:none;margin-bottom:16px"></div>
 
             <div class="filtros-barra">
                 <input class="input-busqueda" type="text" id="filtro-documento"
                     placeholder="Buscar por documento..." oninput="ModuloConductores.filtrar()">
-                <select class="select-filtro" id="filtro-estado" onchange="ModuloConductores.filtrar()">
+                <select class="select-filtro" id="filtro-estado"
+                    onchange="ModuloConductores.filtrar()">
                     <option value="">Todos los estados</option>
                     <option value="disponible">Disponible</option>
                     <option value="en_ruta">En ruta</option>
@@ -38,7 +48,8 @@ const ModuloConductores = (() => {
                 <div class="modal__caja">
                     <div class="modal__cabecera">
                         <h3 id="modal-titulo">Nuevo Conductor</h3>
-                        <button class="modal__cerrar" onclick="ModuloConductores.cerrarModal()">×</button>
+                        <button class="modal__cerrar"
+                            onclick="ModuloConductores.cerrarModal()">×</button>
                     </div>
                     <form id="form-conductor" class="form-grid">
                         <input type="hidden" id="conductor-id">
@@ -68,7 +79,8 @@ const ModuloConductores = (() => {
                         </div>
                         <div class="form-grupo">
                             <label>Categoría *</label>
-                            <input type="text" id="c-categoria" class="form-input" placeholder="Ej: C2, C3">
+                            <input type="text" id="c-categoria" class="form-input"
+                                placeholder="Ej: C2, C3">
                         </div>
                         <div class="form-grupo">
                             <label>Vencimiento Licencia *</label>
@@ -141,12 +153,15 @@ const ModuloConductores = (() => {
                             <td>${c.numero_licencia}</td>
                             <td><span class="badge badge--neutro">${c.categoria_licencia}</span></td>
                             <td>${c.fecha_vencimiento_licencia}</td>
-                            <td><span class="badge ${clases[c.estado] || ''}">${c.estado.replace('_', ' ')}</span></td>
+                            <td><span class="badge ${clases[c.estado] || ''}">
+                                ${c.estado.replace('_', ' ')}</span></td>
                             <td class="acciones">
                                 <button class="btn-tabla btn-tabla--editar"
-                                    onclick='ModuloConductores.abrirFormulario(${JSON.stringify(c)})'>Editar</button>
+                                    onclick='ModuloConductores.abrirFormulario(${JSON.stringify(c)})'>
+                                    Editar</button>
                                 <button class="btn-tabla btn-tabla--eliminar"
-                                    onclick="ModuloConductores.eliminar(${c.id})">Eliminar</button>
+                                    onclick="ModuloConductores.eliminar(${c.id})">
+                                    Eliminar</button>
                             </td>
                         </tr>
                     `).join('')}
@@ -164,12 +179,77 @@ const ModuloConductores = (() => {
         cargarTabla(filtros);
     }
 
+    async function verAlertas() {
+        const panel = document.getElementById('panel-alertas');
+
+        if (panel.style.display === 'block') {
+            panel.style.display = 'none';
+            return;
+        }
+
+        panel.style.display = 'block';
+        panel.innerHTML = '<div class="cargando">Cargando alertas...</div>';
+
+        const res = await ApiService.get(
+            `${CONFIG.MS_CONDUCTORES}/api/conductores/licencias-por-vencer?dias=30`
+        );
+
+        if (!res.success || !res.data.length) {
+            panel.innerHTML = `
+                <div class="dashboard-card">
+                    <div class="dashboard-card__titulo">⚠️ Licencias próximas a vencer</div>
+                    <div class="vacio-msg">
+                        No hay licencias por vencer en los próximos 30 días.
+                    </div>
+                </div>
+            `;
+            return;
+        }
+
+        panel.innerHTML = `
+            <div class="dashboard-card">
+                <div class="dashboard-card__titulo">
+                    ⚠️ Licencias próximas a vencer — ${res.total} conductor(es)
+                </div>
+                <table class="tabla" style="margin-top:10px">
+                    <thead>
+                        <tr>
+                            <th>Conductor</th>
+                            <th>Licencia</th>
+                            <th>Vencimiento</th>
+                            <th>Días restantes</th>
+                            <th>Alerta</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${res.data.map(c => `
+                            <tr>
+                                <td>${c.nombres} ${c.apellidos}</td>
+                                <td>${c.numero_licencia}</td>
+                                <td>${c.fecha_vencimiento_licencia}</td>
+                                <td><strong>${c.dias_restantes} días</strong></td>
+                                <td>
+                                    <span class="badge ${c.alerta === 'critica'
+                                        ? 'badge--peligro' : 'badge--advertencia'}">
+                                        ${c.alerta === 'critica'
+                                            ? '🔴 Crítica' : '🟡 Advertencia'}
+                                    </span>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
+
     function abrirFormulario(conductor = null) {
         document.getElementById('modal-conductor').style.display = 'flex';
-        document.getElementById('modal-titulo').textContent = conductor ? 'Editar Conductor' : 'Nuevo Conductor';
+        document.getElementById('modal-titulo').textContent =
+            conductor ? 'Editar Conductor' : 'Nuevo Conductor';
 
         if (conductor) {
-            document.getElementById('conductor-id').value    = conductor.id;
+            document.getElementById('conductor-id').value   = conductor.id;
             document.getElementById('c-nombres').value      = conductor.nombres;
             document.getElementById('c-apellidos').value    = conductor.apellidos;
             document.getElementById('c-documento').value    = conductor.documento;
@@ -235,5 +315,8 @@ const ModuloConductores = (() => {
         }
     }
 
-    return { renderizar, abrirFormulario, cerrarModal, guardar, eliminar, filtrar };
+    return {
+        renderizar, abrirFormulario, cerrarModal,
+        guardar, eliminar, filtrar, verAlertas,
+    };
 })();
