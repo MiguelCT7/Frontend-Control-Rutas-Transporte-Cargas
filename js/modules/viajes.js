@@ -1,6 +1,6 @@
 /**
  * Módulo Viajes y Seguimiento
- * Gestiona el control operativo y el historial de viajes.
+ * Gestiona el control operativo, historial y reporte de viajes.
  */
 const ModuloViajes = (() => {
 
@@ -16,7 +16,12 @@ const ModuloViajes = (() => {
                     <h2 class="modulo-titulo">Viajes y Seguimiento</h2>
                     <p class="modulo-subtitulo">Control operativo en tiempo real</p>
                 </div>
+                <button class="btn btn--info" onclick="ModuloViajes.verReporte()">
+                    📈 Ver Reporte
+                </button>
             </div>
+
+            <div id="panel-reporte" style="display:none;margin-bottom:16px"></div>
 
             <div class="filtros-barra">
                 <input class="input-busqueda" type="number" id="filtro-prog-id"
@@ -33,15 +38,25 @@ const ModuloViajes = (() => {
 
             <div class="acciones-viaje">
                 <button class="btn btn--primario"
-                    onclick="ModuloViajes.abrirModalAccion('iniciar')">▶ Iniciar Viaje</button>
+                    onclick="ModuloViajes.abrirModalAccion('iniciar')">
+                    ▶ Iniciar Viaje
+                </button>
                 <button class="btn btn--advertencia"
-                    onclick="ModuloViajes.abrirModalAccion('estado')">↺ Actualizar Estado</button>
+                    onclick="ModuloViajes.abrirModalAccion('estado')">
+                    ↺ Actualizar Estado
+                </button>
                 <button class="btn btn--info"
-                    onclick="ModuloViajes.abrirModalAccion('novedad')">+ Registrar Novedad</button>
+                    onclick="ModuloViajes.abrirModalAccion('novedad')">
+                    + Registrar Novedad
+                </button>
                 <button class="btn btn--exito"
-                    onclick="ModuloViajes.abrirModalAccion('finalizar')">■ Finalizar Viaje</button>
+                    onclick="ModuloViajes.abrirModalAccion('finalizar')">
+                    ■ Finalizar Viaje
+                </button>
                 <button class="btn btn--secundario"
-                    onclick="ModuloViajes.abrirHistorial()">📋 Ver Historial</button>
+                    onclick="ModuloViajes.abrirHistorial()">
+                    📋 Ver Historial
+                </button>
             </div>
 
             <div id="tabla-viajes" class="tabla-contenedor">
@@ -92,7 +107,8 @@ const ModuloViajes = (() => {
                     <div class="modal__cabecera">
                         <h3>Historial del Viaje</h3>
                         <button class="modal__cerrar"
-                            onclick="document.getElementById('modal-historial').style.display='none'">×</button>
+                            onclick="document.getElementById('modal-historial').style.display='none'">
+                            ×</button>
                     </div>
                     <div class="form-grid">
                         <div class="form-grupo form-grupo--completo">
@@ -111,6 +127,72 @@ const ModuloViajes = (() => {
         `;
 
         await cargarTabla();
+    }
+
+    async function verReporte() {
+        const panel = document.getElementById('panel-reporte');
+
+        if (panel.style.display === 'block') {
+            panel.style.display = 'none';
+            return;
+        }
+
+        panel.style.display = 'block';
+        panel.innerHTML = '<div class="cargando">Cargando reporte...</div>';
+
+        const res = await ApiService.get(`${URL_BASE()}/reporte`);
+
+        if (!res.success) {
+            panel.innerHTML = `<div class="error-msg">${res.mensaje}</div>`;
+            return;
+        }
+
+        const clases = {
+            programado:  'badge--neutro',
+            en_transito: 'badge--info',
+            retrasado:   'badge--advertencia',
+            finalizado:  'badge--exito',
+            cancelado:   'badge--peligro',
+        };
+
+        const barraColores = {
+            programado:  '#888780',
+            en_transito: '#378add',
+            retrasado:   '#ef9f27',
+            finalizado:  '#1d9e75',
+            cancelado:   '#e24b4a',
+        };
+
+        panel.innerHTML = `
+            <div class="dashboard-card">
+                <div class="dashboard-card__titulo">
+                    📈 Reporte de viajes por estado — Total: ${res.total}
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:14px">
+                    ${res.reporte.map(r => `
+                        <div style="text-align:center;padding:12px;background:#f8fafb;
+                            border-radius:10px;border:1px solid #e8ecf0">
+                            <div style="font-size:22px;font-weight:700;color:#1a1a2e">
+                                ${r.cantidad}
+                            </div>
+                            <div style="margin:6px 0">
+                                <span class="badge ${clases[r.estado] || ''}">
+                                    ${r.estado.replace('_', ' ')}
+                                </span>
+                            </div>
+                            <div style="font-size:11px;color:#aaa">${r.porcentaje}%</div>
+                            <div style="margin-top:8px;height:4px;background:#e8ecf0;
+                                border-radius:2px;overflow:hidden">
+                                <div style="height:100%;width:${r.porcentaje}%;
+                                    background:${barraColores[r.estado] || '#888'};
+                                    border-radius:2px;transition:width .3s">
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
     }
 
     async function cargarTabla(filtros = {}) {
@@ -184,7 +266,8 @@ const ModuloViajes = (() => {
     function abrirModalAccion(accion) {
         accionActual = accion;
         document.getElementById('modal-viaje-accion').style.display = 'flex';
-        document.getElementById('modal-accion-titulo').textContent = titulos[accion] || 'Acción';
+        document.getElementById('modal-accion-titulo').textContent =
+            titulos[accion] || 'Acción';
         document.getElementById('grupo-estado-viaje').style.display =
             accion === 'estado' ? 'block' : 'none';
         document.getElementById('accion-prog-id').value = '';
@@ -260,7 +343,8 @@ const ModuloViajes = (() => {
         const res = await ApiService.get(`${URL_BASE()}/historial/${progId}`);
 
         if (!res.success || !res.data.length) {
-            contenedor.innerHTML = '<div class="vacio-msg">No hay historial para esta programación.</div>';
+            contenedor.innerHTML =
+                '<div class="vacio-msg">No hay historial para esta programación.</div>';
             return;
         }
 
@@ -295,7 +379,7 @@ const ModuloViajes = (() => {
     }
 
     return {
-        renderizar, filtrar,
+        renderizar, filtrar, verReporte,
         abrirModalAccion, cerrarModal, ejecutarAccion,
         abrirHistorial, cargarHistorial,
     };
