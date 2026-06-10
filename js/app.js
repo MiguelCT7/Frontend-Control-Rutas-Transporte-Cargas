@@ -45,13 +45,11 @@ const Auth = (() => {
         document.getElementById('pantalla-login').style.display     = 'none';
         document.getElementById('pantalla-principal').style.display = 'flex';
 
-        // Mostrar nombre e iniciales del usuario
         const nombre = usuario.nombre || usuario.usuario || 'Usuario';
         document.getElementById('usuario-nombre').textContent = nombre;
         document.getElementById('usuario-avatar').textContent =
             nombre.substring(0, 2).toUpperCase();
 
-        // Cargar dashboard por defecto
         Navegacion.ir('dashboard');
     }
 
@@ -78,6 +76,7 @@ const Navegacion = (() => {
 
     const titulos = {
         dashboard:    'Dashboard',
+        usuarios:     'Usuarios',
         conductores:  'Conductores',
         vehiculos:    'Vehículos',
         rutas:        'Rutas y Programación',
@@ -87,6 +86,7 @@ const Navegacion = (() => {
 
     const modulos = {
         dashboard:    () => ModuloDashboard.renderizar(),
+        usuarios:     () => ModuloUsuarios.renderizar(),
         conductores:  () => ModuloConductores.renderizar(),
         vehiculos:    () => ModuloVehiculos.renderizar(),
         rutas:        () => ModuloRutas.renderizar(),
@@ -99,18 +99,15 @@ const Navegacion = (() => {
     };
 
     function ir(modulo) {
-        // Actualizar título del topbar
         document.getElementById('topbar-titulo').textContent =
             titulos[modulo] || modulo;
 
-        // Marcar item activo en sidebar
         document.querySelectorAll('.nav-item').forEach(el => {
             el.classList.remove('active');
         });
 
         event?.currentTarget?.classList.add('active');
 
-        // Renderizar módulo
         if (modulos[modulo]) {
             modulos[modulo]();
         }
@@ -122,12 +119,10 @@ const Navegacion = (() => {
 // ── Inicialización ───────────────────────────────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Permitir login con Enter
     document.getElementById('login-contrasena')
         .addEventListener('keypress', (e) => {
             if (e.key === 'Enter') Auth.login();
         });
 
-    // Verificar si hay sesión activa
     Auth.verificarSesion();
 });
