@@ -1,6 +1,6 @@
 /**
  * Módulo Usuarios
- * Gestiona la creación y administración de usuarios del sistema.
+ * Gestiona la creación, administración de usuarios y cambio de contraseña.
  */
 const ModuloUsuarios = (() => {
 
@@ -14,15 +14,23 @@ const ModuloUsuarios = (() => {
                     <h2 class="modulo-titulo">Usuarios</h2>
                     <p class="modulo-subtitulo">Gestión de usuarios del sistema</p>
                 </div>
-                <button class="btn btn--primario" onclick="ModuloUsuarios.abrirFormulario()">
-                    + Nuevo Usuario
-                </button>
+                <div style="display:flex;gap:10px">
+                    <button class="btn btn--secundario"
+                        onclick="ModuloUsuarios.abrirCambioContrasena()">
+                        🔒 Cambiar Contraseña
+                    </button>
+                    <button class="btn btn--primario"
+                        onclick="ModuloUsuarios.abrirFormulario()">
+                        + Nuevo Usuario
+                    </button>
+                </div>
             </div>
 
             <div id="tabla-usuarios" class="tabla-contenedor">
                 <div class="cargando">Cargando usuarios...</div>
             </div>
 
+            <!-- Modal nuevo usuario -->
             <div id="modal-usuario" class="modal" style="display:none">
                 <div class="modal__caja modal__caja--sm">
                     <div class="modal__cabecera">
@@ -63,6 +71,40 @@ const ModuloUsuarios = (() => {
                                 onclick="ModuloUsuarios.cerrarModal()">Cancelar</button>
                             <button type="button" class="btn btn--primario"
                                 onclick="ModuloUsuarios.guardar()">Crear Usuario</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Modal cambio de contraseña -->
+            <div id="modal-contrasena" class="modal" style="display:none">
+                <div class="modal__caja modal__caja--sm">
+                    <div class="modal__cabecera">
+                        <h3>Cambiar Contraseña</h3>
+                        <button class="modal__cerrar"
+                            onclick="ModuloUsuarios.cerrarModalContrasena()">×</button>
+                    </div>
+                    <form id="form-contrasena" class="form-grid">
+                        <div class="form-grupo form-grupo--completo">
+                            <label>Contraseña actual *</label>
+                            <input type="password" id="cp-actual" class="form-input"
+                                placeholder="Ingresa tu contraseña actual" required>
+                        </div>
+                        <div class="form-grupo form-grupo--completo">
+                            <label>Nueva contraseña *</label>
+                            <input type="password" id="cp-nueva" class="form-input"
+                                placeholder="Mínimo 4 caracteres" required>
+                        </div>
+                        <div class="form-grupo form-grupo--completo">
+                            <label>Confirmar nueva contraseña *</label>
+                            <input type="password" id="cp-confirmar" class="form-input"
+                                placeholder="Repite la nueva contraseña" required>
+                        </div>
+                        <div class="form-acciones">
+                            <button type="button" class="btn btn--secundario"
+                                onclick="ModuloUsuarios.cerrarModalContrasena()">Cancelar</button>
+                            <button type="button" class="btn btn--primario"
+                                onclick="ModuloUsuarios.guardarContrasena()">Actualizar</button>
                         </div>
                     </form>
                 </div>
@@ -109,7 +151,8 @@ const ModuloUsuarios = (() => {
                             <td>${u.correo}</td>
                             <td><span class="badge badge--neutro">${u.rol}</span></td>
                             <td>
-                                <span class="badge ${u.estado === 'activo' ? 'badge--exito' : 'badge--peligro'}">
+                                <span class="badge ${u.estado === 'activo'
+                                    ? 'badge--exito' : 'badge--peligro'}">
                                     ${u.estado}
                                 </span>
                             </td>
@@ -139,6 +182,15 @@ const ModuloUsuarios = (() => {
         document.getElementById('modal-usuario').style.display = 'none';
     }
 
+    function abrirCambioContrasena() {
+        document.getElementById('modal-contrasena').style.display = 'flex';
+        document.getElementById('form-contrasena').reset();
+    }
+
+    function cerrarModalContrasena() {
+        document.getElementById('modal-contrasena').style.display = 'none';
+    }
+
     async function guardar() {
         const payload = {
             nombre:     document.getElementById('u-nombre').value.trim(),
@@ -164,9 +216,41 @@ const ModuloUsuarios = (() => {
         }
     }
 
+    async function guardarContrasena() {
+        const actual    = document.getElementById('cp-actual').value.trim();
+        const nueva     = document.getElementById('cp-nueva').value.trim();
+        const confirmar = document.getElementById('cp-confirmar').value.trim();
+
+        if (!actual || !nueva || !confirmar) {
+            NotificacionService.error('Completa todos los campos.');
+            return;
+        }
+
+        if (nueva !== confirmar) {
+            NotificacionService.error('La nueva contraseña y la confirmación no coinciden.');
+            return;
+        }
+
+        if (nueva.length < 4) {
+            NotificacionService.error('La nueva contraseña debe tener al menos 4 caracteres.');
+            return;
+        }
+
+        const res = await ApiService.post(
+            `${CONFIG.MS_AUTH}/api/auth/cambiar-contrasena`,
+            { contrasena_actual: actual, contrasena_nueva: nueva }
+        );
+
+        if (res.success) {
+            NotificacionService.exito(res.mensaje);
+            cerrarModalContrasena();
+        } else {
+            NotificacionService.error(res.mensaje || 'Error al cambiar la contraseña.');
+        }
+    }
+
     async function cambiarEstado(id) {
         const res = await ApiService.patch(`${URL_BASE()}/${id}/estado`);
-
         if (res.success) {
             NotificacionService.exito(res.mensaje);
             cargarTabla();
@@ -177,9 +261,7 @@ const ModuloUsuarios = (() => {
 
     async function eliminar(id) {
         if (!confirm('¿Estás seguro de eliminar este usuario?')) return;
-
         const res = await ApiService.delete(`${URL_BASE()}/${id}`);
-
         if (res.success) {
             NotificacionService.exito(res.mensaje);
             cargarTabla();
@@ -188,5 +270,9 @@ const ModuloUsuarios = (() => {
         }
     }
 
-    return { renderizar, abrirFormulario, cerrarModal, guardar, cambiarEstado, eliminar };
+    return {
+        renderizar, abrirFormulario, cerrarModal,
+        abrirCambioContrasena, cerrarModalContrasena,
+        guardar, guardarContrasena, cambiarEstado, eliminar,
+    };
 })();
